@@ -1,0 +1,48 @@
+<?php
+
+namespace KryuuCommon\PromiseTest\Internal;
+
+use KryuuCommon\PromiseTest\TestCase;
+
+class QueueTest extends TestCase
+{
+    /** @test */
+    public function excutesTasks()
+    {
+        $queue = new Queue();
+
+        $queue->enqueue($this->expectCallableOnce());
+        $queue->enqueue($this->expectCallableOnce());
+    }
+
+    /** @test */
+    public function excutesNestedEnqueuedTasks()
+    {
+        $queue = new Queue();
+
+        $nested = $this->expectCallableOnce();
+
+        $task = function () use ($queue, $nested) {
+            $queue->enqueue($nested);
+        };
+
+        $queue->enqueue($task);
+    }
+
+    /**
+     * @test
+     * @expectedException Exception
+     * @expectedException test
+     */
+    public function rethrowsExceptionsThrownFromTasks()
+    {
+        $mock = $this->createCallableMock();
+        $mock
+            ->expects($this->once())
+            ->method('__invoke')
+            ->will($this->throwException(new \Exception('test')));
+
+        $queue = new Queue();
+        $queue->enqueue($mock);
+    }
+}

@@ -1,0 +1,48 @@
+<?php
+
+namespace KryuuCommon\PromiseTest;
+
+use KryuuCommon\PromiseTest\PromiseAdapter\CallbackPromiseAdapter;
+
+class FulfilledPromiseTest extends TestCase
+{
+    use PromiseTest\PromiseSettledTestTrait,
+        PromiseTest\PromiseFulfilledTestTrait;
+
+    public function getPromiseTestAdapter(callable $canceller = null)
+    {
+        $promise = null;
+
+        return new CallbackPromiseAdapter([
+            'promise' => function () use (&$promise) {
+                if (!$promise) {
+                    throw new \LogicException('FulfilledPromise must be resolved before obtaining the promise');
+                }
+
+                return $promise;
+            },
+            'resolve' => function ($value = null) use (&$promise) {
+                if (!$promise) {
+                    $promise = new FulfilledPromise($value);
+                }
+            },
+            'reject' => function () {
+                throw new \LogicException('You cannot call reject() for KryuuCommon\PromiseTest\FulfilledPromise');
+            },
+            'settle' => function ($value = null) use (&$promise) {
+                if (!$promise) {
+                    $promise = new FulfilledPromise($value);
+                }
+            },
+        ]);
+    }
+
+    /**
+     * @test
+     * @expectedException InvalidArgumentException
+     */
+    public function shouldThrowExceptionIfConstructedWithAPromise()
+    {
+        return new FulfilledPromise(new FulfilledPromise());
+    }
+}
